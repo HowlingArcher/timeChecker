@@ -36,7 +36,9 @@ pyinstaller --onefile --noconsole --icon=favicon.ico --add-data "favicon.ico;." 
 ## ToDo
 - [ ] Add support for linux
 - [ ] Add support for mac
-- [ ] Make sure the main application name is used not the application's title 
+- [ ] Make sure the main application name is used not the application's title
+- [ ] Make the text readable on the pie chart
+- [ ] Make the pie chart bigger
 
 ## Contributing
 If you want to contribute to this project, feel free to fork this project and make a pull request. I'll review the pull request and merge it if it's a good addition to the project.

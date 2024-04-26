@@ -4,9 +4,10 @@
 1. [Description](#description)
 2. [Installation](#installation)
 3. [Usage](#usage)
-5. [Contributing](#contributing)
-6. [License](#license)
-7. [Author](#author)
+5. [ToDo](#todo)
+6. [Contributing](#contributing)
+7. [License](#license)
+8. [Author](#author)
 
 ## Description
 This is a simple application that keeps the time you're in an application. It's made to see if you spend too much time on an application so you can reduce the time on it. The project does need some work, because as of now it uses the title of the application, but most applications don't use their own name in the title, rather they use what you're doing, example: visual studio code displays the current project you're working in.
@@ -31,6 +32,11 @@ pyinstaller --onefile --noconsole --icon=favicon.ico --add-data "favicon.ico;." 
 4. Press the `Stop Tracking` button to stop tracking the time.
 5. Press the `Save Tracked Data` button to save the pie chart as a png file, and the data as a excel file. (This will also clear the pie chart data afterwards!)
 6. Done!
+
+## ToDo
+- [ ] Add support for linux
+- [ ] Add support for mac
+- [ ] Make sure the main application name is used not the application's title 
 
 ## Contributing
 If you want to contribute to this project, feel free to fork this project and make a pull request. I'll review the pull request and merge it if it's a good addition to the project.

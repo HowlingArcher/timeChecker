@@ -1,13 +1,15 @@
+#!/usr/bin/env python3
+
 import tkinter as tk
 import threading
 import time
 import platform
 import subprocess
 import sys
+import os
 from openpyxl import Workbook
 import openpyxl.drawing.image  # Import for adding images to Excel file
 import matplotlib.pyplot as plt
-import os
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -26,10 +28,14 @@ def get_active_window_title():
         raise NotImplementedError("Unsupported platform")
 
 def _get_active_window_title_windows():
-    import win32gui
-    window = win32gui.GetForegroundWindow()
-    title = win32gui.GetWindowText(window)
-    return title
+    try:
+        import win32gui
+        window = win32gui.GetForegroundWindow()
+        title = win32gui.GetWindowText(window)
+        return title
+    except ImportError:
+        print("pywin32 module is required to get active window title on Windows.")
+        sys.exit(1)
 
 def _get_active_application_name_macos():
     from AppKit import NSWorkspace
@@ -139,6 +145,9 @@ def main():
     root = tk.Tk()
     root.title("App Usage Tracker")
 
+    icon = tk.PhotoImage(file="favicon.ico")
+    root.call('wm', 'iconphoto', root._w, icon)
+
     # Create the pie chart
     fig = plt.figure(figsize=(6, 6))
     canvas = FigureCanvasTkAgg(fig, master=root)
@@ -155,6 +164,9 @@ def main():
     # Button to save tracked data
     save_button = tk.Button(root, text="Save Tracked Data", command=lambda: export_to_excel(tracked_apps))
     save_button.pack(side=tk.BOTTOM)
+
+    # Bind the window closing event to stop_tracking and root.quit()
+    root.protocol("WM_DELETE_WINDOW", lambda: [stop_tracking(), root.quit()])
 
     root.mainloop()
 

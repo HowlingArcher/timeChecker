@@ -29,3 +29,8 @@ replay_pid*
 # all excel files
 *.xlsx
 *.xls
+
+# all the built files and folders
+dist/
+build/
+timeChecker.spec

@@ -1,4 +1,4 @@
-# #!/usr/bin/env python3
+# # #!/usr/bin/env python3
 
 import tkinter as tk
 import threading
@@ -55,7 +55,7 @@ def _get_active_window_title_linux():
     result = subprocess.run(['xdotool', 'getactivewindow', 'getwindowname'], capture_output=True, text=True)
     return result.stdout.strip()
 
-def export_to_excel(tracked_apps):
+def export_to_excel(tracked_apps, fig):
     global already_saved
     # Create the 'files' folder if it doesn't exist
     if not os.path.exists("files"):
@@ -85,7 +85,7 @@ def export_to_excel(tracked_apps):
         ws_stats.append([app, time_spent])
     
     # Create a pie chart
-    update_pie_chart(tracked_apps)
+    update_pie_chart(tracked_apps, fig)
 
     # Save the pie chart as PNG
     plt.savefig(pie_chart_filename)
@@ -99,13 +99,13 @@ def export_to_excel(tracked_apps):
     # Update already_saved to true
     already_saved = True
     # Clear the pie chart
-    update_pie_chart(tracked_apps)
+    update_pie_chart(tracked_apps, fig)
 
     # Show save notification
     folder_name = os.path.abspath(files_folder)
     messagebox.showinfo("Save Notification", f"We have saved your files to {folder_name}")
 
-def update_pie_chart(tracked_apps):
+def update_pie_chart(tracked_apps, fig, canvas):
     # Clear the existing plot
     plt.clf()
 
@@ -116,6 +116,9 @@ def update_pie_chart(tracked_apps):
     plt.pie(sizes, labels=labels, autopct='%1.1f%%')
     plt.title("Time Spent in Applications")
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
+
+    # Update the canvas with the new figure
+    canvas.draw_idle()
 
 def start_tracking(canvas):
     global already_saved
@@ -143,10 +146,7 @@ def start_tracking(canvas):
         print("Total Elapsed Time:", elapsed_time)
 
         # Update the pie chart
-        update_pie_chart(tracked_apps)
-
-        # Update the pie chart in the Tkinter application
-        canvas.draw_idle()
+        update_pie_chart(tracked_apps, fig, canvas)
 
         time.sleep(1)
 
@@ -164,7 +164,7 @@ def save_and_quit():
     if(already_saved == False):
         result = messagebox.askquestion("Quit Confirmation", "Do you want to save your tracked data before quitting?")
         if result == "yes":
-            export_to_excel(tracked_apps)
+            export_to_excel(tracked_apps, fig)
             sys.exit()
         else:
             sys.exit()
@@ -177,8 +177,17 @@ def start_tracking_thread(canvas):
     tracking_thread = threading.Thread(target=start_tracking, args=(canvas,))
     tracking_thread.start()
 
+def resize(event):
+    global fig, canvas
+    new_width = event.width / 100
+    new_height = event.height / 100
+    fig.set_size_inches(new_width, new_height)
+    canvas.draw()
+
 def main():
     global root  # Access the global variable root
+    global fig, canvas
+
     root = tk.Tk()
     root.title("App Usage Tracker")
 
@@ -197,14 +206,15 @@ def main():
     stop_button = tk.Button(button_frame, text="Stop Tracking", command=stop_tracking)
     stop_button.pack(side=tk.LEFT, padx=5)
 
-    # Create the pie chart with larger size
-    fig = plt.figure(figsize=(10, 9))
+    # Create the pie chart with scalable size
+    fig = plt.figure(figsize=(6, 6))  # Initial size, can be adjusted
     canvas = FigureCanvasTkAgg(fig, master=root)
     canvas.draw()
-    canvas.get_tk_widget().pack()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+    root.bind("<Configure>", resize)  # Bind resize event
 
     # Button to save tracked data
-    save_button = tk.Button(root, text="Save Tracked Data", command=lambda: export_to_excel(tracked_apps))
+    save_button = tk.Button(root, text="Save Tracked Data", command=lambda: export_to_excel(tracked_apps, fig))
     save_button.pack(side=tk.BOTTOM, pady=5)
 
     # Bind the window closing event to save_and_quit

@@ -22,6 +22,8 @@ tracked_apps = {}
 tracking_active = False
 root = None
 already_saved = True
+fig = None
+canvas = None
 
 def get_active_window_title():
     if sys.platform.startswith('win'):
@@ -55,8 +57,12 @@ def _get_active_window_title_linux():
     result = subprocess.run(['xdotool', 'getactivewindow', 'getwindowname'], capture_output=True, text=True)
     return result.stdout.strip()
 
-def export_to_excel(tracked_apps, fig):
+def export_to_excel(tracked_apps, fig, canvas):
     global already_saved
+    global tracking_active
+
+    tracking_active = False
+
     # Create the 'files' folder if it doesn't exist
     if not os.path.exists("files"):
         os.makedirs("files")
@@ -85,7 +91,7 @@ def export_to_excel(tracked_apps, fig):
         ws_stats.append([app, time_spent])
     
     # Create a pie chart
-    update_pie_chart(tracked_apps, fig)
+    update_pie_chart(tracked_apps, fig, canvas)
 
     # Save the pie chart as PNG
     plt.savefig(pie_chart_filename)
@@ -99,7 +105,7 @@ def export_to_excel(tracked_apps, fig):
     # Update already_saved to true
     already_saved = True
     # Clear the pie chart
-    update_pie_chart(tracked_apps, fig)
+    update_pie_chart(tracked_apps, fig, canvas)
 
     # Show save notification
     folder_name = os.path.abspath(files_folder)
@@ -160,11 +166,12 @@ def stop_tracking():
 def save_and_quit():
     global tracking_active
     global already_saved
+    global tracked_apps, fig, canvas
     tracking_active = False
     if(already_saved == False):
         result = messagebox.askquestion("Quit Confirmation", "Do you want to save your tracked data before quitting?")
         if result == "yes":
-            export_to_excel(tracked_apps, fig)
+            export_to_excel(tracked_apps, fig, canvas)
             sys.exit()
         else:
             sys.exit()
@@ -186,7 +193,8 @@ def resize(event):
 
 def main():
     global root  # Access the global variable root
-    global fig, canvas
+    global fig
+    global canvas
 
     root = tk.Tk()
     root.title("App Usage Tracker")
@@ -214,7 +222,7 @@ def main():
     root.bind("<Configure>", resize)  # Bind resize event
 
     # Button to save tracked data
-    save_button = tk.Button(root, text="Save Tracked Data", command=lambda: export_to_excel(tracked_apps, fig))
+    save_button = tk.Button(root, text="Save Tracked Data", command=lambda: export_to_excel(tracked_apps, fig, canvas))
     save_button.pack(side=tk.BOTTOM, pady=5)
 
     # Bind the window closing event to save_and_quit

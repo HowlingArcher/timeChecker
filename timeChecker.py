@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# #!/usr/bin/env python3
 
 import tkinter as tk
 import threading
@@ -6,16 +6,21 @@ import time
 import platform
 import subprocess
 import sys
+import subprocess
 import os
 from openpyxl import Workbook
 import openpyxl.drawing.image  # Import for adding images to Excel file
 import matplotlib.pyplot as plt
-from tkinter import ttk
+from tkinter import messagebox  # Added for message box notifications
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import psutil
+import win32gui
+import win32process
 
 # Global variables
 tracked_apps = {}
 tracking_active = False
+root = None  # Global variable to store the Tkinter root window
 
 def get_active_window_title():
     if sys.platform.startswith('win'):
@@ -29,18 +34,19 @@ def get_active_window_title():
 
 def _get_active_window_title_windows():
     try:
-        import win32gui
         window = win32gui.GetForegroundWindow()
-        title = win32gui.GetWindowText(window)
-        return title
+        _, process_id = win32process.GetWindowThreadProcessId(window)
+        process = psutil.Process(process_id)
+        app_name = process.name()
+        return app_name
     except ImportError:
-        print("pywin32 module is required to get active window title on Windows.")
+        print("pywin32 and psutil modules are required to get active window title on Windows.")
         sys.exit(1)
 
 def _get_active_application_name_macos():
     from AppKit import NSWorkspace
-    active_app = NSWorkspace.sharedWorkspace().activeApplication()
-    app_name = active_app["NSApplicationName"]
+    active_app = NSWorkspace.sharedWorkspace().frontmostApplication()
+    app_name = active_app.localizedName()
     return app_name
 
 def _get_active_window_title_linux():
@@ -87,7 +93,12 @@ def export_to_excel(tracked_apps):
 
     # Reset the tracked apps
     tracked_apps.clear()
+    # Clear the pie chart
+    update_pie_chart(tracked_apps)
 
+    # Show save notification
+    folder_name = os.path.abspath(files_folder)
+    messagebox.showinfo("Save Notification", f"We have saved your files to {folder_name}")
 
 def update_pie_chart(tracked_apps):
     # Clear the existing plot
@@ -103,6 +114,8 @@ def update_pie_chart(tracked_apps):
 
 def start_tracking(canvas):
     global tracked_apps, tracking_active
+    global root  # Access the global variable root
+
     start_time = time.time()
 
     while tracking_active:
@@ -134,6 +147,19 @@ def stop_tracking():
     global tracking_active
     tracking_active = False
 
+    # Show stop tracking notification
+    messagebox.showinfo("Stop Tracking Notification", "We've stopped tracking your application time")
+
+def save_and_quit():
+    global tracking_active
+    tracking_active = False
+    result = messagebox.askquestion("Quit Confirmation", "Do you want to save your tracked data before quitting?")
+    if result == "yes":
+        export_to_excel(tracked_apps)
+        sys.exit()
+    else:
+        sys.exit()
+
 def start_tracking_thread(canvas):
     global tracking_active
     tracking_active = True
@@ -141,32 +167,37 @@ def start_tracking_thread(canvas):
     tracking_thread.start()
 
 def main():
-    # Create the main Tkinter window
+    global root  # Access the global variable root
     root = tk.Tk()
     root.title("App Usage Tracker")
 
     icon = tk.PhotoImage(file="favicon.ico")
     root.call('wm', 'iconphoto', root._w, icon)
 
-    # Create the pie chart
-    fig = plt.figure(figsize=(6, 6))
+    # Frame to contain the start and stop buttons
+    button_frame = tk.Frame(root)
+    button_frame.pack(side=tk.TOP, pady=5)
+
+    # Button to start tracking
+    start_button = tk.Button(button_frame, text="Start Tracking", command=lambda: start_tracking_thread(canvas))
+    start_button.pack(side=tk.LEFT, padx=5)
+
+    # Button to stop tracking
+    stop_button = tk.Button(button_frame, text="Stop Tracking", command=stop_tracking)
+    stop_button.pack(side=tk.LEFT, padx=5)
+
+    # Create the pie chart with larger size
+    fig = plt.figure(figsize=(10, 9))
     canvas = FigureCanvasTkAgg(fig, master=root)
     canvas.draw()
     canvas.get_tk_widget().pack()
 
-    # Buttons to start and stop tracking
-    start_button = tk.Button(root, text="Start Tracking", command=lambda: start_tracking_thread(canvas))
-    start_button.pack()
-
-    stop_button = tk.Button(root, text="Stop Tracking", command=stop_tracking)
-    stop_button.pack()
-
     # Button to save tracked data
     save_button = tk.Button(root, text="Save Tracked Data", command=lambda: export_to_excel(tracked_apps))
-    save_button.pack(side=tk.BOTTOM)
+    save_button.pack(side=tk.BOTTOM, pady=5)
 
-    # Bind the window closing event to stop_tracking and root.quit()
-    root.protocol("WM_DELETE_WINDOW", lambda: [stop_tracking(), root.quit()])
+    # Bind the window closing event to save_and_quit
+    root.protocol("WM_DELETE_WINDOW", save_and_quit)
 
     root.mainloop()
 

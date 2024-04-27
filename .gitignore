@@ -34,3 +34,4 @@ replay_pid*
 dist/
 build/
 timeChecker.spec
+files/

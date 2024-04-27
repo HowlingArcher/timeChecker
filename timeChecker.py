@@ -20,7 +20,8 @@ import win32process
 # Global variables
 tracked_apps = {}
 tracking_active = False
-root = None  # Global variable to store the Tkinter root window
+root = None
+already_saved = True
 
 def get_active_window_title():
     if sys.platform.startswith('win'):
@@ -37,7 +38,8 @@ def _get_active_window_title_windows():
         window = win32gui.GetForegroundWindow()
         _, process_id = win32process.GetWindowThreadProcessId(window)
         process = psutil.Process(process_id)
-        app_name = process.name()
+        process_name = process.name()
+        app_name = process_name.split(".exe")[0]
         return app_name
     except ImportError:
         print("pywin32 and psutil modules are required to get active window title on Windows.")
@@ -54,6 +56,7 @@ def _get_active_window_title_linux():
     return result.stdout.strip()
 
 def export_to_excel(tracked_apps):
+    global already_saved
     # Create the 'files' folder if it doesn't exist
     if not os.path.exists("files"):
         os.makedirs("files")
@@ -93,6 +96,8 @@ def export_to_excel(tracked_apps):
 
     # Reset the tracked apps
     tracked_apps.clear()
+    # Update already_saved to true
+    already_saved = True
     # Clear the pie chart
     update_pie_chart(tracked_apps)
 
@@ -113,10 +118,12 @@ def update_pie_chart(tracked_apps):
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
 
 def start_tracking(canvas):
+    global already_saved
     global tracked_apps, tracking_active
     global root  # Access the global variable root
-
+    
     start_time = time.time()
+    already_saved = False
 
     while tracking_active:
         active_app = get_active_window_title()
@@ -152,13 +159,17 @@ def stop_tracking():
 
 def save_and_quit():
     global tracking_active
+    global already_saved
     tracking_active = False
-    result = messagebox.askquestion("Quit Confirmation", "Do you want to save your tracked data before quitting?")
-    if result == "yes":
-        export_to_excel(tracked_apps)
-        sys.exit()
+    if(already_saved == False):
+        result = messagebox.askquestion("Quit Confirmation", "Do you want to save your tracked data before quitting?")
+        if result == "yes":
+            export_to_excel(tracked_apps)
+            sys.exit()
+        else:
+            sys.exit()
     else:
-        sys.exit()
+        sys.exit()        
 
 def start_tracking_thread(canvas):
     global tracking_active
